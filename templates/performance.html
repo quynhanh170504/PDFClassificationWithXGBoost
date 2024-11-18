@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %} Performance {% endblock %}
+{% block content %} 
+  <div style="display: flex; padding: 40px;">
+    <div style="margin: 0 auto;">
+      <img src="{{url_for('static', filename = 'images/confusion_matrix_xgb_500.png')}}" alt="model_performance_vs_number_of_estimators">
+    </div>
+  </div>
+  <div style="display: flex; padding: 40px;">
+    <div style="margin: 0 auto;">
+      <img src="{{url_for('static', filename = 'images/model_performance_vs_number_of_estimators.png')}}" alt="model_performance_vs_number_of_estimators">
+    </div>
+  </div>  
+  <div style="display: grid; grid-template-columns: auto auto;padding: 50px;">
+    <div>
+      <img src="{{url_for('static', filename = 'images/n_estimators_xbg_500.png')}}" alt="n_estimators_xbg_500">
+    </div>
+    <div>
+      <img src="{{url_for('static', filename = 'images/roc_auc_xgb_500.png')}}" alt="roc_auc_xgb_500">
+    </div>
+    <div>
+      <img src="{{url_for('static', filename = 'images/accuracy_xgb_500.png')}}" alt="accuracy_xgb_500">
+    </div>
+    <div>
+      <img src="{{url_for('static', filename = 'images/precision_xgb_500.png')}}" alt="precision_xgb_500">
+    </div>
+    <div>
+      <img src="{{url_for('static', filename = 'images/recall_xgb_500.png')}}" alt="recall_xgb_500">
+    </div>
+    <div>
+      <img src="{{url_for('static', filename = 'images/F1_Score_xgb_500.png')}}" alt="F1_Score_xgb_500">
+    </div>
+  </div>
+{% endblock %}

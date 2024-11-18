@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+{% block title %} Home {% endblock %}
+{% block css %} <link rel="stylesheet" href="home.css"> {% endblock %}
+{% block content %} 
+  <div style="display: flex; padding: 40px;">
+    <div style="margin-right: 20px; border: 1px solid black; height: 50vh; padding: 30px; width: 1000px; border-radius: 10px;">
+      <form 
+        id="uploadForm" 
+        action="http://localhost:5000/upload" 
+        method="post" 
+        enctype="multipart/form-data"
+      >
+        Upload PDF File
+        <input type="file" name="file" id="fileInput" accept=".pdf">
+        <input type="submit" value="Upload" name="submit">
+        <div id="result"></div>
+      </form>
+    </div>
+    <div id="features" style="margin-right: 20px; border: 1px solid black; height: 1150px; padding: 30px; width: 100vw; border-radius: 10px;">
+      Nothing to show
+    </div>
+  </div>
+  <!-- <script>
+    document.getElementById("uploadForm").addEventListener("submit", async function (event) {
+      event.preventDefault();
+      // Get the file
+      const fileInput = document.getElementById("fileInput").files[0];
+      if (!fileInput) {
+        alert("Please select a file.");
+        return;
+      }
+      const formData = new FormData();
+      formData.append("file", fileInput);
+      try {
+        // Step 1: Send the file to /upload to extract features
+        let response = await fetch("/upload", {
+          method: "POST",
+          body: formData
+        });
+        let result = await response.json();
+        console.log('check response result: ', result)
+        if (response.ok) {
+          // Step 2: Display prediction results
+          document.getElementById("result").innerHTML = `
+          <div style="margin-top: 10px; border: 1px solid black; border-radius: 10px; height: 70%;">
+            <p style="font-size: 20; font-weight: bold; text-align: center;">Prediction Result:</p>
+            <p><span style="font-weight: bold">Prediction: </span> ${result["Prediction"]}</p>
+            <p><span style="font-weight: bold">Malicious Probability: </span>${result["Malicious Probability"]}</p>
+            <p><span style="font-weight: bold">Benign Probability: </span>${result["Benign Probability"]}</p>
+          </div>
+          `;
+        } else {
+          document.getElementById("result").innerText = result.error || "An error occurred.";
+        }
+      } 
+      catch (error) {
+        console.error("Error:", error);
+        document.getElementById("result").innerText = "An error occurred during upload.";
+      }
+    });
+  </script> -->
+  <script>
+    $(document).ready(function() {
+      $("#uploadForm").on("submit", function(event) {
+        event.preventDefault();
+        const fileInput = $("#fileInput")[0].files[0];
+        if (!fileInput) {
+          alert("Please select a file.");
+          return;
+        }
+        const formData = new FormData();
+        formData.append("file", fileInput);
+        // Step 1: Send the file to /upload to extract features and predict
+        $.ajax({
+          url: "/upload",
+          type: "POST",
+          data: formData,
+          contentType: false,
+          processData: false,
+          success: function(response) {
+            // Display prediction results
+            const result = response.predict_result;
+            const features = response.features;
+
+            $("#result").html(`
+              <div style="margin-top: 10px; border: 1px solid black; border-radius: 10px; height: 70%;">
+                <p style="font-size: 20; font-weight: bold; text-align: center;">Prediction Result:</p>
+                <p><span style="font-weight: bold">Prediction: </span> ${result["Prediction"]}</p>
+                <p><span style="font-weight: bold">Malicious Probability: </span>${result["Malicious Probability"]}</p>
+                <p><span style="font-weight: bold">Benign Probability: </span>${result["Benign Probability"]}</p>
+              </div>
+            `);
+
+            // Display extracted features
+            let featuresHtml = "<h2>Extracted Features:</h2>";
+            featuresHtml += `
+              <table style = "border: 1px solid black;">
+            `
+            for (const [key, value] of Object.entries(features)) {
+              if(key === 'Header') {
+                featuresHtml += `
+                <tr>
+                  <td style = "border: 1px solid black; font-weight: bold;">${key}</td>
+                  <td style = "border: 1px solid black;">"%PDF-${value}"</td>
+                </tr>
+              `;
+              }
+              else 
+                featuresHtml += `
+                  <tr>
+                    <td style = "border: 1px solid black; font-weight: bold;">${key}</td>
+                    <td style = "border: 1px solid black;">${value}</td>
+                  </tr>
+                `;
+            }
+            featuresHtml += `
+              </table>
+            `
+            $("#features").html(featuresHtml);
+          },
+          error: function(xhr) {
+            const error = xhr.responseJSON && xhr.responseJSON.error ? xhr.responseJSON.error : "An error occurred.";
+            $("#result").text(error);
+          }
+        });
+      });
+    });
+  </script>
+{% endblock %}
