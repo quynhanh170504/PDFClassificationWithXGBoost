@@ -20,45 +20,6 @@
       Nothing to show
     </div>
   </div>
-  <!-- <script>
-    document.getElementById("uploadForm").addEventListener("submit", async function (event) {
-      event.preventDefault();
-      // Get the file
-      const fileInput = document.getElementById("fileInput").files[0];
-      if (!fileInput) {
-        alert("Please select a file.");
-        return;
-      }
-      const formData = new FormData();
-      formData.append("file", fileInput);
-      try {
-        // Step 1: Send the file to /upload to extract features
-        let response = await fetch("/upload", {
-          method: "POST",
-          body: formData
-        });
-        let result = await response.json();
-        console.log('check response result: ', result)
-        if (response.ok) {
-          // Step 2: Display prediction results
-          document.getElementById("result").innerHTML = `
-          <div style="margin-top: 10px; border: 1px solid black; border-radius: 10px; height: 70%;">
-            <p style="font-size: 20; font-weight: bold; text-align: center;">Prediction Result:</p>
-            <p><span style="font-weight: bold">Prediction: </span> ${result["Prediction"]}</p>
-            <p><span style="font-weight: bold">Malicious Probability: </span>${result["Malicious Probability"]}</p>
-            <p><span style="font-weight: bold">Benign Probability: </span>${result["Benign Probability"]}</p>
-          </div>
-          `;
-        } else {
-          document.getElementById("result").innerText = result.error || "An error occurred.";
-        }
-      } 
-      catch (error) {
-        console.error("Error:", error);
-        document.getElementById("result").innerText = "An error occurred during upload.";
-      }
-    });
-  </script> -->
   <script>
     $(document).ready(function() {
       $("#uploadForm").on("submit", function(event) {
@@ -82,14 +43,27 @@
             const result = response.predict_result;
             const features = response.features;
 
-            $("#result").html(`
-              <div style="margin-top: 10px; border: 1px solid black; border-radius: 10px; height: 70%;">
-                <p style="font-size: 20; font-weight: bold; text-align: center;">Prediction Result:</p>
-                <p><span style="font-weight: bold">Prediction: </span> ${result["Prediction"]}</p>
-                <p><span style="font-weight: bold">Malicious Probability: </span>${result["Malicious Probability"]}</p>
-                <p><span style="font-weight: bold">Benign Probability: </span>${result["Benign Probability"]}</p>
-              </div>
-            `);
+            if(result["Prediction"] === "Malicious") {
+              $("#result").html(`
+                <div style="margin-top: 10px; border: 1px solid black; border-radius: 10px; height: 70%;">
+                  <p style="font-size: 20; font-weight: bold; text-align: center;">Prediction Result:</p>
+                  <p><b>Prediction:</b> <span style="color: red">${result["Prediction"]}</span></p>
+                  <p><b>Malicious Probability:</b>${result["Malicious Probability"]}</p>
+                  <p><b>Benign Probability: </b>${result["Benign Probability"]}</p>
+                </div>
+              `);  
+            }
+            else {
+              $("#result").html(`
+                <div style="margin-top: 10px; border: 1px solid black; border-radius: 10px; height: 70%;">
+                  <p style="font-size: 20; font-weight: bold; text-align: center;">Prediction Result:</p>
+                  <p><b>Prediction:</b> <span style="color: green">${result["Prediction"]}</span></p>
+                  <p><b>Malicious Probability:</b>${result["Malicious Probability"]}</p>
+                  <p><b>Benign Probability: </b>${result["Benign Probability"]}</p>
+                </div>
+              `);
+            }
+            
 
             // Display extracted features
             let featuresHtml = "<h2>Extracted Features:</h2>";

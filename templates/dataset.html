@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %} Dataset {% endblock %}
+{% block content %} 
+	Hello dataset
+	
+	<div style="padding: 10px;">
+		<div class="dataset_for_train">
+			<p><b>Data for train: 7016 entries</b></p>
+		</div>
+		<table style="font-size: 12px; border-collapse: collapse;">
+			<thead>
+				<tr class="table-header">
+					
+				</tr>	
+			</thead>
+			<tbody class="table-body">
+			</tbody>
+		</table>
+		6916 more ... 
+	</div>
+
+	<script>
+		$.get('/dataset', function(data, status) {
+			let datasetInArray = data
+			for (const [key, value] of Object.entries(datasetInArray[0])) {
+				$('.table-header').append(`
+					<th style="border: 1px solid black">${key}</th>
+				`)
+			}
+			for(let i = 0; i < 100; i++) { // hiển thị 100 dòng trong số 7016 dòng (nhiều dòng lag)
+				let row = datasetInArray[i]
+				$(".table-body").append(`<tr class="row0">`)
+				for (const [key, value] of Object.entries(row)) {
+					$('.table-body').append(`
+						<td style="border: 1px solid black">${value}</td>
+					`)		
+				}
+				$(".table-body").append(`</tr>`)
+			}
+			console.log("size of datasetInArray: ", datasetInArray.length)
+		})
+	</script>
+{% endblock %}
