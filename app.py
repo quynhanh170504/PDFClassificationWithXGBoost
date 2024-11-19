@@ -44,6 +44,7 @@ def xs_y(df_, targ):
   y = df_[targ].copy()
   return xs, y
 # Tiền xử lí dữ liệu
+@app.route('/dataset', methods=["GET"])
 def data_preprocessing():
   data = pd.read_parquet('./dataset/PDFMalware2022.parquet')
   # Drop FileName col
@@ -72,14 +73,17 @@ def data_preprocessing():
   X_val, y_val = xs_y(valid, 'Class')
   X_test, y_test = xs_y(test, 'Class')
 
-  return {
-    "X_train": X_train,
-    "y_train": y_train,
-    "X_val": X_val,
-    "y_val": y_val,
-    "X_test": X_test,
-    "y_test": y_test
-  }
+  X_train_json = X_train.to_dict(orient='records')
+
+  # response = {
+  #   "X_train": X_train,
+  #   "y_train": y_train,
+  #   "X_val": X_val,
+  #   "y_val": y_val,
+  #   "X_test": X_test,
+  #   "y_test": y_test
+  # }
+  return jsonify(X_train_json)
 
 @app.route('/')
 def home():
@@ -87,6 +91,9 @@ def home():
 @app.route('/performance')
 def performance():
   return render_template('performance.html')
+@app.route('/displayDataset')
+def dataset():
+  return render_template('dataset.html')
 
 import subprocess
 # Hàm này dùng để trích xuất giá trị tương ứng với key từ kết quả của pdfid
@@ -194,49 +201,6 @@ def extract_pdf_features(file_path):
 
   
   return features
-  
-
-# import subprocess
-# import xml.etree.ElementTree as ET
-# def extract_pdf_features_using_pdfid(file_path):
-#   features = {
-#     "AA": 0, "Acroform": 0, "Colors": 0.0, "EmbeddedFile": 0,
-#     "EmbeddedFiles": 0.0, "Encrypt": 0.0, "Endobj": 0, "Endstream": 0,
-#     "Header": 0, "Images": 0, "JBIG2Decode": 0, "JS": 0, "Javascript": 0,
-#     "Launch": 0, "MetadataSize": 0.0, "Obj": 0, "ObjStm": 0.0, "OpenAction": 0,
-#     "PageNo": 0, "Pages": 0.0, "PdfSize": 0.0, "RichMedia": 0, "StartXref": 0,
-#     "Stream": 0.0, "Text": 0, "TitleCharacters": 0.0, "Trailer": 0.0,
-#     "XFA": 0, "Xref": 0, "XrefLength": 0.0, "isEncrypted": 0.0
-#   }
-
-#   try:
-#       # Run pdfid and capture the output in XML format
-#     result = subprocess.run(
-#       ["pdfid", "-n", file_path, "-o", "xml"],
-#       capture_output=True, text=True, check=True
-#     )
-#     # Parse the XML output
-#     root = ET.fromstring(result.stdout)
-    
-#     # Extract values for each feature if available
-#     for keyword in root.findall(".//keyword"):
-#       name = keyword.attrib.get("name")
-#       count = int(keyword.attrib.get("count", 0))
-      
-#       if name in features:
-#         features[name] = count
-    
-#     # Additional metadata extraction (file size and number of pages)
-#     features["PdfSize"] = os.path.getsize(file_path) / 1024  # in KB
-#     features["Pages"] = int(root.find(".//pdfid/pagecount").text) if root.find(".//pdfid/pagecount") is not None else 0
-#     features["isEncrypted"] = 1.0 if root.find(".//pdfid/encrypted").text == "True" else 0.0
-
-#   except subprocess.CalledProcessError as e:
-#     print(f"Error running pdfid: {e}")
-#   except ET.ParseError as e:
-#     print(f"Error parsing pdfid output: {e}")
-
-#   return features
 
 @app.route('/upload', methods=['POST'])
 def upload_file():
