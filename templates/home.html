@@ -2,7 +2,7 @@
 {% block title %} Home {% endblock %}
 {% block css %} <link rel="stylesheet" href="home.css"> {% endblock %}
 {% block content %} 
-  <div style="display: flex; padding: 40px;">
+  <div style="display: flex; padding: 40px; margin-top: 30px;">
     <div style="margin-right: 20px; border: 1px solid black; height: 50vh; padding: 30px; width: 1000px; border-radius: 10px;">
       <form 
         id="uploadForm" 
@@ -46,7 +46,7 @@
             if(result["Prediction"] === "Malicious") {
               $("#result").html(`
                 <div style="margin-top: 10px; border: 1px solid black; border-radius: 10px; height: 70%;">
-                  <p style="font-size: 20; font-weight: bold; text-align: center;">Prediction Result:</p>
+                  <p style="font-size: 20px; font-weight: bold; text-align: center;">Prediction Result:</p>
                   <p><b>Prediction:</b> <span style="color: red">${result["Prediction"]}</span></p>
                   <p><b>Malicious Probability:</b>${result["Malicious Probability"]}</p>
                   <p><b>Benign Probability: </b>${result["Benign Probability"]}</p>

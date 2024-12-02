@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% block title %} Performance {% endblock %}
 {% block content %} 
+<div style="margin-top: 30px;">
   <div style="display: flex; padding: 40px;">
     <div style="margin: 0 auto;">
       <img src="{{url_for('static', filename = 'images/confusion_matrix_xgb_500.png')}}" alt="model_performance_vs_number_of_estimators">
@@ -31,4 +32,5 @@
       <img src="{{url_for('static', filename = 'images/F1_Score_xgb_500.png')}}" alt="F1_Score_xgb_500">
     </div>
   </div>
+</div>
 {% endblock %}

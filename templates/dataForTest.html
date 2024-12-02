@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% block title %} Data for test {% endblock %}
+{% block content %}
+<link rel="stylesheet" type="text/css" href="{{url_for('static', filename='styles/dataset.css')}}">
+<div style="display: flex; flex-direction: row; margin-top: 40px;">
+  <!-- Sidebar -->
+  	<div class="sidebar-container">
+			<ul class="ull">
+				<li style="--i:6" data-text="Home" class="lii">
+					<a href="/" class="a-tag">
+						<span class="span-tag">
+							<i class="fas fa-house"></i>
+						</span>
+						Home
+					</a>
+				</li>
+				<li style="--i:5" data-text="Train Data" class="lii">
+					<a href="/trainData" class="a-tag">
+						<span class="span-tag">
+							<i class="fas fa-briefcase"></i>
+						</span>
+						Train data
+					</a>
+				</li>
+				<li style="--i:4" data-text="Test Data" class="lii">
+					<a href="/testData" class="a-tag">
+						<span class="span-tag">
+							<i class="fas fa-users"></i>
+						</span>
+						Test Data
+					</a>
+				</li>
+			</ul>
+		</div>
+  <!-- Sidebar -->
+  <!--Main layout-->
+		<main style="margin-top: 40px; padding-left: 300px">
+		  <div class="container pt-4"></div>
+		  <div style="padding: 10px;">
+				<div class="dataset_for_train">
+					<p><b>Data for test: 2014 entries</b></p>
+				</div>
+				<table style="font-size: 12px; border-collapse: collapse;">
+					<thead>
+						<tr class="table-header">
+							<th></th>
+						</tr>	
+					</thead>
+					<tbody class="table-body">
+					</tbody>
+				</table>
+				<div class="remain"></div>
+				<button class="btn-loadmore" style="border-radius: 10px">Load more 100 row</button>
+			</div>
+		</main>
+	<!--Main layout-->
+</div>
+
+
+	
+
+	<script>
+		$(document).ready(function() {
+			let arr = []
+			$.get('/testdataset', function(data, status) {
+				arr = data
+			})
+			let cnt = 0
+			$('.btn-loadmore').click(function() {
+				for(let i = cnt; i < cnt + 100; i++) { // hiển thị 100 dòng trong số 7016 dòng (nhiều dòng lag lắm)
+					if(i == 0) {
+						for (const [key, value] of Object.entries(arr[i])) {
+							$('.table-header').append(`
+								<th style="border: 1px solid black; color: blue; font-weight: bold">${key}</th>
+							`)
+						}	
+					}		
+					// $(".table-body").append(`
+					// 	<tr>
+					// 		<td style="border: 1px solid black">${i}</td>
+					// `)
+					let stt = i + 1
+					$(".table-body").append(`<tr>`)
+					$(".table-body").append(`<td style="border: 1px solid black; color: blue; font-weight: bold">${stt}</td>`)
+					for (const [key, value] of Object.entries(arr[i])) {
+						$('.table-body').append(`
+							<td style="border: 1px solid black">${value}</td>
+						`)		
+					}
+					$(".table-body").append(`</tr>`)
+				}
+				cnt += 100
+				let remain = 2014 - cnt
+				$('.remain').html(`<b>${remain} left ...</b>`)
+			})
+		})
+		
+		
+
+	</script>
+{% endblock %}

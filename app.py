@@ -12,20 +12,18 @@ import pdfplumber
 import fitz  # PyMuPDF
 import pdfminer
 import json
+from PyPDF2 import PdfReader
 
 # Load trained model
-model = joblib.load("./xgb_model.joblib")  # make sure correct path
-model1 = joblib.load("./xgb_model_1.joblib")  # make sure correct path
-model10 = joblib.load("./xgb_model_10.joblib")  # make sure correct path
-model50 = joblib.load("./xgb_model_50.joblib")  # make sure correct path
-model100 = joblib.load("./xgb_model_100.joblib")  # make sure correct path
-model200 = joblib.load("./xgb_model_200.joblib")  # make sure correct path
+# model = joblib.load("./xgb_model.joblib")  # make sure correct path
+model = joblib.load("./xgb_model_200.joblib")  # make sure correct path
+# model1 = joblib.load("./xgb_model_1.joblib")
+# model10 = joblib.load("./xgb_model_10.joblib")
+# model50 = joblib.load("./xgb_model_50.joblib")
+# model100 = joblib.load("./xgb_model_100.joblib")
+# model200 = joblib.load("./xgb_model_200.joblib")
 
 app = Flask(__name__)
-
-# Define structure of request body
-class Features(BaseModel):
-  features: list
 
 import numpy as np
 import pandas as pd
@@ -44,8 +42,8 @@ def xs_y(df_, targ):
   y = df_[targ].copy()
   return xs, y
 # Tiền xử lí dữ liệu
-@app.route('/dataset', methods=["GET"])
-def data_preprocessing():
+@app.route('/traindataset', methods=["GET"])
+def traindata_preprocessing(): 
   data = pd.read_parquet('./dataset/PDFMalware2022.parquet')
   # Drop FileName col
   data.drop(columns=['FileName'], inplace=True)
@@ -74,16 +72,42 @@ def data_preprocessing():
   X_test, y_test = xs_y(test, 'Class')
 
   X_train_json = X_train.to_dict(orient='records')
+  X_test_json = X_test.to_dict(orient='records')
 
-  # response = {
-  #   "X_train": X_train,
-  #   "y_train": y_train,
-  #   "X_val": X_val,
-  #   "y_val": y_val,
-  #   "X_test": X_test,
-  #   "y_test": y_test
-  # }
   return jsonify(X_train_json)
+@app.route('/testdataset', methods=["GET"])
+def testdata_preprocessing():
+  data = pd.read_parquet('./dataset/PDFMalware2022.parquet')
+  # Drop FileName col
+  data.drop(columns=['FileName'], inplace=True)
+  # Gán nhãn cho cột Class
+  data['Class'] = data['Class'].astype('object')
+  data.loc[data['Class'] == 'Malicious', 'Class'] = 1
+  data.loc[data['Class'] == 'Benign', 'Class'] = 0
+
+  data['Class'] = data['Class'].astype(dtype=np.int64)
+
+  # Phân loại các thuộc tính
+  cats = data.select_dtypes(include='category').columns
+  conts = data.columns.difference(['Class'] + list(cats))
+
+  # Chia dữ liệu --> training, test, valid (70, 20, 10)
+  train, valid = train_test_split(data, test_size=0.30, random_state=0)
+  test, valid = train_test_split(valid, test_size=0.33, random_state=0)
+  # Chuyển các đặc trưng cấu trúc thành số
+  train[cats] = train[cats].apply(lambda x: x.cat.codes)
+  valid[cats] = valid[cats].apply(lambda x: x.cat.codes)
+  test[cats] = test[cats].apply(lambda x: x.cat.codes)
+
+  # Chia train, test, valid --> X_Train, y_train, X_valid, y_valid, X_test, y_test
+  X_train, y_train = xs_y(train, 'Class')
+  X_val, y_val = xs_y(valid, 'Class')
+  X_test, y_test = xs_y(test, 'Class')
+
+  X_train_json = X_train.to_dict(orient='records')
+  X_test_json = X_test.to_dict(orient='records')
+
+  return jsonify(X_test_json)
 
 @app.route('/')
 def home():
@@ -91,9 +115,12 @@ def home():
 @app.route('/performance')
 def performance():
   return render_template('performance.html')
-@app.route('/displayDataset')
-def dataset():
-  return render_template('dataset.html')
+@app.route('/trainData')
+def train():
+  return render_template('dataForTrain.html')
+@app.route('/testData')
+def test():
+  return render_template('dataForTest.html')
 
 import subprocess
 # Hàm này dùng để trích xuất giá trị tương ứng với key từ kết quả của pdfid
@@ -104,40 +131,38 @@ def get_pdf_value(output, key):
       if key == 'PDF Header':
         # Tìm phần "PDF-x.y" và tách lấy giá trị "x.y"
         pdf_version = line.split()[-1]
-        return pdf_version.split('-')[1] if pdf_version.startswith('%PDF-') else '0.0'
+        return pdf_version.split('-')[1] if pdf_version.startswith('%PDF-') else '0.0'  
       # Lấy giá trị sau dấu cách (space)
       return int(line.split()[-1]) if line.split()[-1].isdigit() else line.split()[-1]
   return 0  # Giá trị mặc định nếu không tìm thấy
-# Hàm trích xuất đặc trưng từ tệp pdf
+# Hàm này dùng để trích xuất đặc trưng từ tệp pdf
 def extract_pdf_features(file_path):
   features = {
-    "AA": 0, "Acroform": 0, "Colors": 0.0, "EmbeddedFile": 0,
+    "AA": 0, "Acroform": 0, "Colors": 0.0, "EmbeddedFile": 0, 
     "EmbeddedFiles": 0.0, "Encrypt": 0.0, "Endobj": 0, "Endstream": 0,
     "Header": 1.7, "Images": 0, "JBIG2Decode": 0, "JS": 0, "Javascript": 0,
     "Launch": 0, "MetadataSize": 0.0, "Obj": 0, "ObjStm": 0.0, "OpenAction": 0,
     "PageNo": 0, "Pages": 0.0, "PdfSize": 0.0, "RichMedia": 0, "StartXref": 0,
-    "Stream": 0.0, "Text": 0, "TitleCharacters": 0.0, "Trailer": 0.0,
+    "Stream": 0.0, "Text": 3, "TitleCharacters": 0.0, "Trailer": 0.0,
     "XFA": 0, "Xref": 0, "XrefLength": 0.0, "isEncrypted": 0.0
   }
-    
-  # Load PDF and calculate basic metadata
+  reader = PdfReader(file_path)
+  if reader.pages:
+    first_page = reader.pages[0]
+    # Check if text exists
+    text = first_page.extract_text()
+    if text and text.strip():
+      features["Text"] = 2
+      # Extract title (first line) and calculate its length
+      title_line = text.splitlines()[0]
+      features["TitleCharacters"] = len(title_line)
+  
   with fitz.open(file_path) as pdf:
-    features["Pages"] = pdf.page_count
-    # features["PageNo"] = features["Pages"]
-    features["PdfSize"] = os.path.getsize(file_path) / 1024  # in KB
+    features["PdfSize"] = os.path.getsize(file_path) / 1024  # in KB  
     features["isEncrypted"] = 1.0 if pdf.is_encrypted else 0.0
     features["XrefLength"] = pdf.xref_length()
-    
-    # Extract text-based features, metadata, and page content
-    for page_num in range(pdf.page_count):
-      page = pdf.load_page(page_num)
-      features["Text"] += int(bool(page.get_text()))  # Counts pages with text
-      features["Images"] += len(page.get_images(full=True))  # Image count
-      features["Stream"] += len(page.search_for("stream"))
-      features["Endstream"] += len(page.search_for("endstream"))
-    
-
-  # Get metadata size and other properties using pdfminer
+  
+  # Get metadata size using pdfminer
   from pdfminer.pdfparser import PDFParser
   from pdfminer.pdfdocument import PDFDocument
   from pdfminer.pdfpage import PDFPage
@@ -147,59 +172,35 @@ def extract_pdf_features(file_path):
     parser = PDFParser(f)
     document = PDFDocument(parser)
     features["MetadataSize"] = len(document.info[0]) if document.info else 0
-    
-    is_encrypted = document.encryption is not None
-    features["Encrypt"] = 1.0 if is_encrypted else 0.0
-    
-    # Analyze object structure
-    features["Obj"] = sum(1 for _ in PDFPage.create_pages(document))
-    
-    # features["XrefLength"] = resolve1(document.xrefs[0]) if document.xrefs else 0
 
-    # Additional fields, if available in pdfminer
-    
+  # Get rest features using pdfid
   pdfid_result = subprocess.run(['python', './pdfid/pdfid.py', file_path], capture_output=True, text=True)
   if pdfid_result.returncode != 0:
     raise Exception(f"Error extracting PDF features: {result.stderr}")
   pdfid_output = pdfid_result.stdout
-
   features['Header'] = get_pdf_value(pdfid_output, 'PDF Header')
-
   features['AA'] = get_pdf_value(pdfid_output, '/AA')
   features['Acroform'] = get_pdf_value(pdfid_output, '/Acroform')
-
   features['Colors'] = get_pdf_value(pdfid_output, '/Colors > 2^24')
   features['Endobj'] = get_pdf_value(pdfid_output, 'endobj')
-  features['Endstream'] = get_pdf_value(pdfid_output, 'endstream')
   features['EmbeddedFile'] = get_pdf_value(pdfid_output, '/EmbeddedFile')
+  features['Endstream'] = get_pdf_value(pdfid_output, 'endstream')
   features['Encrypt'] = get_pdf_value(pdfid_output, '/Encrypt')
-
   features['JS'] = get_pdf_value(pdfid_output, '/JS')
   features['Javascript'] = get_pdf_value(pdfid_output, '/JavaScript')
   features['JBIG2Decode'] = get_pdf_value(pdfid_output, '/JBIG2Decode')
-
   features['Launch'] = get_pdf_value(pdfid_output, '/Launch')
-
   features['Pages'] = get_pdf_value(pdfid_output, '/Page')
-
   features['Obj'] = get_pdf_value(pdfid_output, 'obj')
   features['ObjStm'] = get_pdf_value(pdfid_output, '/ObjStm')
   features['OpenAction'] = get_pdf_value(pdfid_output, '/OpenAction')
-  
   features['Stream'] = get_pdf_value(pdfid_output, 'stream')
   features['StartXref'] = get_pdf_value(pdfid_output, 'startXref')
-
-  
   features['RichMedia'] = get_pdf_value(pdfid_output, '/RichMedia')
-
-
-
   features['Trailer'] = get_pdf_value(pdfid_output, 'trailer')
-
   features['Xref'] = get_pdf_value(pdfid_output, 'xref')
   features['XFA'] = get_pdf_value(pdfid_output, '/XFA')
 
-  
   return features
 
 @app.route('/upload', methods=['POST'])
@@ -255,11 +256,7 @@ def predict_func():
     feature_array = np.array(data["features"]).reshape(1, -1)        
     prediction = model.predict(feature_array)[0]
     prediction_prob = model.predict_proba(feature_array)[0]
-    # return jsonify({
-    #   "Prediction": "Malicious" if prediction == 1 else "Benign",
-    #   "Malicious Probability": float(prediction_prob[1]),
-    #   "Benign Probability": float(prediction_prob[0]),
-    # })
+
     predict_result = {
       "Prediction": "Malicious" if prediction == 1 else "Benign",
       "Malicious Probability": float(prediction_prob[1]),
@@ -268,73 +265,6 @@ def predict_func():
     return render_template('result.html', predict_result=predict_result)
   else:
     return render_template('result.html')
-
-@app.route('/result')
-def result():
-  return render_template('result.html')
-
-@app.route('/chart')
-def chart_drawing():
-  results = [
-    {
-      'n_estimators': 1,
-      'ROC-AUC': 0.9532597858060547,
-      'Accuracy': 0.9558093346573983,
-      'Precision': 0.9353146853146853,
-      'Recall': 0.9861751152073732,
-      'F1-Score': 0.9600717810677434
-    },
-    {
-      'n_estimators': 10,
-      'ROC-AUC': 0.9923137212105579,
-      'Accuracy': 0.9925521350546177,
-      'Precision': 0.9908256880733946,
-      'Recall': 0.9953917050691244,
-      'F1-Score': 0.993103448275862
-    },
-    {
-      'n_estimators': 50,
-      'ROC-AUC': 0.996003829498048,
-      'Accuracy': 0.9960278053624627,
-      'Precision': 0.9963133640552996,
-      'Recall': 0.9963133640552996,
-      'F1-Score': 0.9963133640552996
-    },
-    {
-      'n_estimators': 100,
-      'ROC-AUC': 0.9950047868725601,
-      'Accuracy': 0.9950347567030785,
-      'Precision': 0.9953917050691244,
-      'Recall': 0.9953917050691244,
-      'F1-Score': 0.9953917050691244
-    },
-    {
-      'n_estimators': 200,
-      'ROC-AUC': 0.9959264458587351,
-      'Accuracy': 0.9960278053624627,
-      'Precision': 0.9954001839926403,
-      'Recall': 0.9972350230414746,
-      'F1-Score': 0.996316758747698
-    },
-    {
-      'n_estimators': 500,
-      'ROC-AUC': 0.9959264458587351,
-      'Accuracy': 0.9960278053624627,
-      'Precision': 0.9954001839926403,
-      'Recall': 0.9972350230414746,
-      'F1-Score': 0.996316758747698
-    }
-  ]
-  results_df = pd.DataFrame(results)
-  #   n_estimators	  ROC-AUC	Accuracy	Precision	    Recall	F1-Score
-  # 0	           1	 0.953260	0.955809	 0.935315	  0.986175	0.960072
-  # 1	          10	 0.992314	0.992552	 0.990826	  0.995392	0.993103
-  # 2	          50	 0.996004	0.996028	 0.996313	  0.996313	0.996313
-  # 3	         100	 0.995005	0.995035	 0.995392	  0.995392	0.995392
-  # 4	         200	 0.995926	0.996028	 0.995400	  0.997235	0.996317
-  # 5       	 500	 0.995926	0.996028	 0.995400	  0.997235	0.996317
-  return results_df
-
 
 if __name__ == "__main__":
   app.run(debug=True)
