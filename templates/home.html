@@ -1,103 +1,132 @@
 {% extends "base.html" %}
 {% block title %} Home {% endblock %}
-{% block css %} <link rel="stylesheet" href="home.css"> {% endblock %}
-{% block content %} 
-  <div style="display: flex; padding: 40px; margin-top: 30px;">
-    <div style="margin-right: 20px; border: 1px solid black; height: 50vh; padding: 30px; width: 1000px; border-radius: 10px;">
-      <form 
-        id="uploadForm" 
-        action="http://localhost:5000/upload" 
-        method="post" 
-        enctype="multipart/form-data"
-      >
-        Upload PDF File
-        <input type="file" name="file" id="fileInput" accept=".pdf">
-        <input type="submit" value="Upload" name="submit">
-        <div id="result"></div>
-      </form>
-    </div>
-    <div id="features" style="margin-right: 20px; border: 1px solid black; height: 1150px; padding: 30px; width: 100vw; border-radius: 10px;">
-      Nothing to show
-    </div>
+{% block css %}
+<link rel="stylesheet" href="{{url_for('static', filename='styles/home.css')}}"> {% endblock %}
+{% block content %}
+<div style="display: flex; padding: 40px; margin-top: 30px;">
+  <div
+    class="upload-container"
+    style="margin-right: 20px; border: 1px solid black;max-height: 55vh;padding: 30px; width: 1000px; border-radius: 10px;">
+    <form id="uploadForm" action="http://localhost:5000/upload" method="post" enctype="multipart/form-data">
+      Upload PDF File
+      <!-- <input type="file" name="file" id="fileInput" accept=".pdf"> -->
+      <div class="file-upload">
+        <div class="file-select">
+          <div class="file-select-button" id="fileName">Choose File</div>
+          <div class="file-select-name" id="noFile">No file chosen...</div>
+          <input type="file" name="file" id="fileInput" accept=".pdf">
+        </div>
+      </div>
+      <input type="submit" value="Upload" name="submit" class="submit-btn">
+      <div id="result"></div>
+    </form>
   </div>
-  <script>
-    $(document).ready(function() {
-      $("#uploadForm").on("submit", function(event) {
-        event.preventDefault();
-        const fileInput = $("#fileInput")[0].files[0];
-        if (!fileInput) {
-          alert("Please select a file.");
-          return;
-        }
-        const formData = new FormData();
-        formData.append("file", fileInput);
-        // Step 1: Send the file to /upload to extract features and predict
-        $.ajax({
-          url: "/upload",
-          type: "POST",
-          data: formData,
-          contentType: false,
-          processData: false,
-          success: function(response) {
-            // Display prediction results
-            const result = response.predict_result;
-            const features = response.features;
+  <div id="features"
+    style="height: auto;width: 100vw;">
+    Nothing to show
+  </div>
+</div>
+<script>
+  $(document).ready(function () {
+    //upload style
+    $('#fileInput').bind('change', function () {
+      var filename = $("#fileInput").val();
+      if (/^\s*$/.test(filename)) {
+        $(".file-upload").removeClass('active');
+        $("#noFile").text("No file chosen...");
+      }
+      else {
+        $(".file-upload").addClass('active');
+        $("#noFile").text(filename.replace("C:\\fakepath\\", ""));
+      }
+    });
 
-            if(result["Prediction"] === "Malicious") {
-              $("#result").html(`
-                <div style="margin-top: 10px; border: 1px solid black; border-radius: 10px; height: 70%;">
-                  <p style="font-size: 20px; font-weight: bold; text-align: center;">Prediction Result:</p>
-                  <p><b>Prediction:</b> <span style="color: red">${result["Prediction"]}</span></p>
-                  <p><b>Malicious Probability:</b>${result["Malicious Probability"]}</p>
-                  <p><b>Benign Probability: </b>${result["Benign Probability"]}</p>
-                </div>
-              `);  
-            }
-            else {
-              $("#result").html(`
-                <div style="margin-top: 10px; border: 1px solid black; border-radius: 10px; height: 70%;">
-                  <p style="font-size: 20; font-weight: bold; text-align: center;">Prediction Result:</p>
-                  <p><b>Prediction:</b> <span style="color: green">${result["Prediction"]}</span></p>
-                  <p><b>Malicious Probability:</b>${result["Malicious Probability"]}</p>
-                  <p><b>Benign Probability: </b>${result["Benign Probability"]}</p>
-                </div>
-              `);
-            }
-            
+    //upload form
+    $("#uploadForm").on("submit", function (event) {
+      event.preventDefault();
+      const fileInput = $("#fileInput")[0].files[0];
+      if (!fileInput) {
+        alert("Please select a file.");
+        return;
+      }
+      const formData = new FormData();
+      formData.append("file", fileInput);
+      // Step 1: Send the file to /upload to extract features and predict
+      $.ajax({
+        url: "/upload",
+        type: "POST",
+        data: formData,
+        contentType: false,
+        processData: false,
+        success: function (response) {
+          // Display prediction results
+          const result = response.predict_result;
+          const features = response.features;
 
-            // Display extracted features
-            let featuresHtml = "<h2>Extracted Features:</h2>";
-            featuresHtml += `
-              <table style = "border: 1px solid black;">
-            `
-            for (const [key, value] of Object.entries(features)) {
-              if(key === 'Header') {
-                featuresHtml += `
-                <tr>
-                  <td style = "border: 1px solid black; font-weight: bold;">${key}</td>
-                  <td style = "border: 1px solid black;">"%PDF-${value}"</td>
-                </tr>
-              `;
-              }
-              else 
-                featuresHtml += `
-                  <tr>
-                    <td style = "border: 1px solid black; font-weight: bold;">${key}</td>
-                    <td style = "border: 1px solid black;">${value}</td>
-                  </tr>
-                `;
-            }
-            featuresHtml += `
-              </table>
-            `
-            $("#features").html(featuresHtml);
-          },
-          error: function(xhr) {
-            const error = xhr.responseJSON && xhr.responseJSON.error ? xhr.responseJSON.error : "An error occurred.";
-            $("#result").text(error);
+          if (result["Prediction"] === "Malicious") {
+            $("#result").html(`
+              <div>
+                <p>Prediction Result:</p>
+                <p><b>Prediction:</b> <span class="malicious">${result["Prediction"]}</span></p>
+                <p><b>Malicious Probability:</b> ${result["Malicious Probability"]}</p>
+                <p><b>Benign Probability:</b> ${result["Benign Probability"]}</p>
+              </div>
+            `);
+          } else {
+            $("#result").html(`
+              <div>
+                <p>Prediction Result:</p>
+                <p><b>Prediction:</b> <span class="benign">${result["Prediction"]}</span></p>
+                <p><b>Malicious Probability:</b> ${result["Malicious Probability"]}</p>
+                <p><b>Benign Probability:</b> ${result["Benign Probability"]}</p>
+              </div>
+            `);
           }
-        });
+
+
+          // Display extracted features
+          let featuresHtml = "<h2>Extracted Features:</h2>";
+          featuresHtml += `
+            <table>
+              <thead>
+                <tr>
+                  <th>Feature</th>
+                  <th>Value</th>
+                  <th>Feature</th>
+                  <th>Value</th>
+                </tr>
+              </thead>
+              <tbody>
+          `;
+
+          // Convert features object to an array for easier splitting
+          const featureEntries = Object.entries(features);
+          for (let i = 0; i < featureEntries.length; i += 2) {
+            const [key1, value1] = featureEntries[i];
+            const [key2, value2] = featureEntries[i + 1] || ["", ""]; // Handle odd number of features
+
+            featuresHtml += `
+              <tr>
+                <td>${key1}</td>
+                <td style="color: #0377fc;font-weight: bold;">${key1 === 'Header' ? `"%PDF-${value1}"` : value1}</td>
+                <td>${key2}</td>
+                <td style="color: #0377fc;font-weight: bold;">${key2 === 'Header' ? `"%PDF-${value2}"` : value2}</td>
+              </tr>
+            `;
+          }
+
+          featuresHtml += `
+              </tbody>
+            </table>
+          `;
+          $("#features").html(featuresHtml);
+        },
+        error: function (xhr) {
+          const error = xhr.responseJSON && xhr.responseJSON.error ? xhr.responseJSON.error : "An error occurred.";
+          $("#result").text(error);
+        }
       });
     });
-  </script>
+  });
+</script>
 {% endblock %}
