@@ -20,17 +20,103 @@
       <img src="{{url_for('static', filename = 'images/roc_auc_xgb_500.png')}}" alt="roc_auc_xgb_500">
     </div>
     <div>
-      <img src="{{url_for('static', filename = 'images/accuracy_xgb_500.png')}}" alt="accuracy_xgb_500">
+      <canvas id="lineChart_accuracy" style="width:100%;max-width:600px"></canvas>
     </div>
     <div>
-      <img src="{{url_for('static', filename = 'images/precision_xgb_500.png')}}" alt="precision_xgb_500">
+      <canvas id="lineChart_precision" style="width:100%;max-width:600px"></canvas>
     </div>
     <div>
-      <img src="{{url_for('static', filename = 'images/recall_xgb_500.png')}}" alt="recall_xgb_500">
+      <canvas id="lineChart_recall" style="width:100%;max-width:600px"></canvas>
+      <img src="{{url_for('static', filename = 'images/recall_xgb_500.png')}}" alt="roc_auc_xgb_500">
     </div>
     <div>
       <img src="{{url_for('static', filename = 'images/F1_Score_xgb_500.png')}}" alt="F1_Score_xgb_500">
     </div>
   </div>
 </div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.js"></script>
+<script>
+  // Accuracy
+  const xValues_accuracy = [0,1,2,3,4,5]
+  const yValues_accuracy = [0.949851,0.991559,0.995531,0.996028,0.996028,0.995531];
+
+  new Chart("lineChart_accuracy", {
+    type: "line",
+    data: {
+      labels: xValues_accuracy,
+      datasets: [{
+        label: "Accuracy",
+        fill: false,
+        lineTension: 0,
+        backgroundColor: "rgba(0,0,255,1.0)",
+        borderColor: "rgba(0,0,255,0.1)",
+        data: yValues_accuracy
+      }]
+    },
+    options: {
+      legend: {
+        display: true,
+        position: 'top'
+      },
+      scales: {
+        yAxes: [{ticks: {min: 0.95, max:1}}],
+      }
+    }
+  });
+  // Precision
+  const xValues_precision = [0,1,2,3,4,5]
+  const yValues_precision = [0.940860,0.989908,0.995396,0.995400,0.996313,0.995396];
+
+  new Chart("lineChart_precision", {
+    type: "line",
+    data: {
+      labels: xValues_precision,
+      datasets: [{
+        label: "Precision",
+        fill: false,
+        lineTension: 0,
+        backgroundColor: "rgba(0,0,255,1.0)",
+        borderColor: "rgba(0,0,255,0.1)",
+        data: yValues_precision
+      }]
+    },
+    options: {
+      legend: {
+        display: true,
+        position: 'top'
+      },
+      scales: {
+        yAxes: [{ticks: {min: 0.95, max:1}}],
+      }
+    }
+  });
+  //Recall
+  const xValues_recall = [0,1,2,3,4,5]
+  const yValues_recall = [0.967742,0.994470,0.996313,0.997235,0.996313,0.996313];
+
+  new Chart("lineChart_recall", {
+    type: "line",
+    data: {
+      labels: xValues_recall,
+      datasets: [{
+        label: "Recall",
+        fill: false,
+        lineTension: 0,
+        backgroundColor: "rgba(0,0,255,1.0)",
+        borderColor: "rgba(0,0,255,0.1)",
+        data: yValues_recall
+      }]
+    },
+    options: {
+      legend: {
+        display: true,
+        position: 'top'
+      },
+      scales: {
+        yAxes: [{ticks: {min: 0.95, max:1}}],
+      }
+    }
+  });
+</script>
 {% endblock %}
