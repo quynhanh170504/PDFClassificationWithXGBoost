@@ -31,6 +31,9 @@
 					</a>
 				</li>
 			</ul>
+			<div class="test-result">
+				View test result here
+			</div>
 		</div>
   <!-- Sidebar -->
   <!--Main layout-->
@@ -44,9 +47,11 @@
 					<thead>
 						<tr class="table-header">
 							<th></th>
-						</tr>	
+						</tr>
+
 					</thead>
 					<tbody class="table-body">
+
 					</tbody>
 				</table>
 				<div class="remain"></div>
@@ -56,16 +61,17 @@
 	<!--Main layout-->
 </div>
 
-
-	
-
 	<script>
 		$(document).ready(function() {
+			let str = ""
 			let arr = []
-			$.get('/testdataset', function(data, status) {
+			let page = 0
+			let cnt = 0
+			let stt = 1
+			$.get(`/testdataset`, function(data, status) {
+				console.log(data.length)
 				arr = data
 			})
-			let cnt = 0
 			$('.btn-loadmore').click(function() {
 				for(let i = cnt; i < cnt + 100; i++) { // hiển thị 100 dòng trong số 7016 dòng (nhiều dòng lag lắm)
 					if(i == 0) {
@@ -75,27 +81,94 @@
 							`)
 						}	
 					}		
-					// $(".table-body").append(`
-					// 	<tr>
-					// 		<td style="border: 1px solid black">${i}</td>
-					// `)
 					let stt = i + 1
-					$(".table-body").append(`<tr>`)
-					$(".table-body").append(`<td style="border: 1px solid black; color: blue; font-weight: bold">${stt}</td>`)
+					// $(".table-body").append(`<tr>`)
+					// $(".table-body").append(`<td style="border: 1px solid black; color: blue; font-weight: bold">${stt}</td>`)
+					// for (const [key, value] of Object.entries(arr[i])) {
+					// 	$('.table-body').append(`
+					// 		<td style="border: 1px solid black" class="data">${value}</td>
+					// 	`)		
+					// }
+					// $(".table-body").append(`
+					// 	<td style="border: 1px solid black">
+					// 		<button class="test">Hmm</button>
+					// 	</td>
+					// `)	
+					// $(".table-body").append(`
+					// 	</tr>
+					// `)
+					let row = `<tr>
+            <td style="border: 1px solid black; color: blue; font-weight: bold">${stt}</td>`;
+
+					// Thêm từng ô dữ liệu vào hàng
 					for (const [key, value] of Object.entries(arr[i])) {
-						$('.table-body').append(`
-							<td style="border: 1px solid black">${value}</td>
-						`)		
+							row += `<td style="border: 1px solid black" class="data">${value}</td>`;
 					}
-					$(".table-body").append(`</tr>`)
+
+					// Thêm nút bấm vào hàng
+					row += `
+							<td style="border: 1px solid black">
+									<button class="test">Test</button>
+							</td>
+					</tr>`;
+
+					// Thêm hàng hoàn chỉnh vào bảng
+					$(".table-body").append(row);
 				}
 				cnt += 100
 				let remain = 2014 - cnt
 				$('.remain').html(`<b>${remain} left ...</b>`)
+				page = page + 100
+			})
+			$(document).on('click', '.test', function() {
+				let reqArr = []
+				console.log('click me ?')
+				let row = $(this).closest('tr'); 
+    
+				// Duyệt qua tất cả các ô `td` trong hàng, in ra giá trị có class `data`
+				row.find('td.data').each(function() {
+						console.log($(this).text());
+						reqArr.push(parseInt($(this).text()))
+				});
+				let reqBody = {
+					features: reqArr
+				}
+				// $.post('/predict', {features: reqArr}, (data, status) => {
+				// 	$('.test-result').html(data)
+				// })
+				$.ajax({
+					url: '/predict',
+					type: 'POST',
+					contentType: 'application/json', // Đặt content type là JSON
+					data: JSON.stringify({ features: reqArr }), // Chuyển đổi dữ liệu thành JSON string
+					success: function(data) {
+							console.log(data)
+							if(data.Prediction === 'Malicious') {
+								$('.test-result').html(`
+									<div>
+										<p style="font-size: 15px;"><b>Prediction:</b> <br> <span style="color: red;">${data.Prediction}</span></p>
+										<p style="font-size: 15px;"><b>Malicious Probability:</b> <br> ${data["Malicious Probability"]}</p>
+										<p style="font-size: 15px;"><b>Benign Probability:</b> <br> ${data["Benign Probability"]}</p>
+									</div>
+							`);	
+							}
+							else {
+								$('.test-result').html(`
+									<div>
+										<p style="font-size: 15px;"><b>Prediction:</b> <br> <span style="color: green;">${data.Prediction}</span></p>
+										<p style="font-size: 15px;"><b>Malicious Probability:</b> <br> ${data["Malicious Probability"]}</p>
+										<p style="font-size: 15px;"><b>Benign Probability:</b> <br> ${data["Benign Probability"]}</p>
+									</div>
+								`);
+							}
+					},
+					error: function(xhr, status, error) {
+							console.error("Error:", error);
+							console.log("Response Text:", xhr.responseText);
+					}
+				});
 			})
 		})
-		
-		
-
 	</script>
+	
 {% endblock %}

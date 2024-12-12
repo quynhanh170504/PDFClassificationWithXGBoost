@@ -1,7 +1,10 @@
+# first run this command: pip install -r requirements.txt
+# 
 # sample request body (31 col)
 # {
 #   "features": [1,1,0.0,1,0.0,0.0,443,98,10,19,1,2,2,1,268.0,443,0.0,2,2,1.0,211.0,1,2,2.0,3,0.0,1.0,1,2,63.0,0.0]
 # }
+#
 from flask import Flask, redirect, url_for, render_template, request, session, jsonify
 from pydantic import BaseModel
 import numpy as np
@@ -108,6 +111,15 @@ def testdata_preprocessing():
   X_test_json = X_test.to_dict(orient='records')
 
   return jsonify(X_test_json)
+  # new
+  # data = X_test_json  # Danh sách toàn bộ dữ liệu (ví dụ, từ cơ sở dữ liệu)
+  # page = int(request.args.get('page', 0))
+  # per_page = 100
+  # start = page * per_page
+  # end = start + per_page
+  # paginated_data = data[start:end]
+
+  # return jsonify(paginated_data)
 
 @app.route('/')
 def home():
@@ -249,11 +261,15 @@ def upload_file():
 @app.route('/predict', methods=["POST", "GET"])
 def predict_func():
   if request.method == "POST":
+    # request body form
+    # {
+    #   "features": [2,	1,	0	,1,	0,	0,	153,	64,	21,	1,	1,	2,	2,	1,	180,	153,	5,	1,	26,	31,	9,	1,	10,	16,	2	,0,	0,	1,	1,	70,	0]
+    # }
     data = request.json
     if "features" not in data:
       return jsonify({"error": "Missing 'features' in request body"}), 400
     # convert features list to numpy array
-    feature_array = np.array(data["features"]).reshape(1, -1)        
+    feature_array = np.array(data["features"]).reshape(1, -1)
     prediction = model.predict(feature_array)[0]
     prediction_prob = model.predict_proba(feature_array)[0]
 
@@ -262,7 +278,8 @@ def predict_func():
       "Malicious Probability": float(prediction_prob[1]),
       "Benign Probability": float(prediction_prob[0]),
     }
-    return render_template('result.html', predict_result=predict_result)
+    # return render_template('result.html', predict_result=predict_result)
+    return jsonify(predict_result)
   else:
     return render_template('result.html')
 
